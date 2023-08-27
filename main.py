@@ -2,7 +2,7 @@ import customtkinter as ctk
 from tkinter import ttk
 from pynput.keyboard import *
 import pynput.mouse as mse
-
+from pynput.keyboard._win32 import KeyCode as KC
 
 # listener.stop()
 
@@ -60,8 +60,10 @@ class App(ctk.CTk):
             anchor="n")
         self.total_clicks_label.place(relx=0.53, rely=0.12)
 
-        # Main loop
+        self.clicked = False
+        # Main loop 
         self.mainloop()
+
 
         # Keyboard and mouse Listener threads
         k_listener.join()
@@ -72,7 +74,8 @@ class App(ctk.CTk):
             self,
             fg_color=GREY)
         frame.place(relx=0, rely=0, relwidth=1, relheight=0.1, anchor="nw")
-        frame.bind()
+        frame.bind("<B1-Motion>", self.move)
+
 
         close_btn = ctk.CTkButton(
             frame,
@@ -88,36 +91,45 @@ class App(ctk.CTk):
             relwidth=0.2,
             anchor="ne")
 
+    def move(self, e):
+
+        self.geometry(f"+{e.x_root}+{e.y_root}")
+
+
     def on_press(self, key):
         name = ""
+
         if type(key) != Key:
-            name = key.char.upper()
+            if key.char is None:
+                name = str(key.vk - 96)
+            elif not key.char.isspace():
+                name = key.char.upper()
+            else:
+                return
         else:
             name = key.name.upper()
+
         if name == "F8":
             self.keys_dict = {}
             self.keys_list = []
             self.label.configure(text="")
+            self.total_clicks = 0
+            self.total_clicks_label.configure(text="Total clicks: 0")
         else:
             keys_list = self.keys_dict.get(name)
-
             if keys_list is None:
-
                 self.keys_dict.update({name: [1, len(self.keys_list), False]})
                 self.total_clicks += 1
                 self.keys_list.append(name)
-
             else:
                 if keys_list[2]:
                     keys_list[0] += 1
                     self.total_clicks += 1
-                    if keys_list[1] != 0:
-                        self.sort(key_list=keys_list, name=name)
-
+                    self.sort(name=name)
                     keys_list[2] = False
         self.show()
-                
-                
+
+        
     def on_pr2ess(self, *args):
 
         if args[3]:
@@ -130,14 +142,19 @@ class App(ctk.CTk):
             else:
                 self.total_clicks += 1
                 key_num[0] += 1
-                if key_num[1] != 0:
-                    self.sort(key_list=key_num, name=name)
+                self.sort(name=name)
             self.show()
                  
     def on_release(self, key):
         name = ""
         if type(key) != Key:
-            name = key.char
+            if key.char is None:
+                
+                name = str(key.vk - 96)
+            elif not key.char.isspace():
+                name = key.char
+            else:
+                return
         else:
             name = key.name
 
@@ -145,17 +162,20 @@ class App(ctk.CTk):
         if key_list is not None:
             key_list[2] = True
 
-    def sort(self, key_list, name):
-        next_item_index = key_list[1] - 1
-        next_item = self.keys_list[next_item_index]
+    def sort(self, name):
+        key_list = self.keys_dict[name]
+        if key_list[1] != 0:
+            next_item_index = key_list[1] - 1
+            next_item = self.keys_list[next_item_index]
 
-        next_item_dict = self.keys_dict[next_item]
+            next_item_dict = self.keys_dict[next_item]
 
-        if next_item_dict[0] < key_list[0]:
-            key_list[1] -= 1
-            next_item_dict[1] += 1
-            self.keys_list[next_item_index] = name
-            self.keys_list[next_item_index + 1] = next_item
+            if next_item_dict[0] < key_list[0]:
+                key_list[1] -= 1
+                next_item_dict[1] += 1
+                self.keys_list[next_item_index] = name
+                self.keys_list[next_item_index + 1] = next_item
+                self.sort(name)
 
     def show(self):
         text = ""
