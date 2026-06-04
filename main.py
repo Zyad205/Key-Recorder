@@ -47,7 +47,7 @@ class App(ctk.CTk):
         k_listener.start()
 
         # Mouse Listener
-        m_listener = mse.Listener(on_click=self.on_pr2ess)
+        m_listener = mse.Listener(on_click=self.on_mse_press)
         m_listener.start()
         self.label = ctk.CTkLabel(self, anchor="nw", font=("Arial", 17), text="")
         self.label.place(relx=0.1, rely=0.15, relwidth=1, relheight=0.75)
@@ -60,7 +60,7 @@ class App(ctk.CTk):
             anchor="n")
         self.total_clicks_label.place(relx=0.53, rely=0.12)
 
-        self.clicked = False
+        self.first_time = True
         # Main loop 
         self.mainloop()
 
@@ -75,7 +75,7 @@ class App(ctk.CTk):
             fg_color=GREY)
         frame.place(relx=0, rely=0, relwidth=1, relheight=0.1, anchor="nw")
         frame.bind("<B1-Motion>", self.move)
-
+        frame.bind("<ButtonRelease-1>", self.unmove)
 
         close_btn = ctk.CTkButton(
             frame,
@@ -92,9 +92,15 @@ class App(ctk.CTk):
             anchor="ne")
 
     def move(self, e):
+        if self.first_time:
+            self.first_time = False
+            self.x = e.x
+            self.y = e.y
 
-        self.geometry(f"+{e.x_root}+{e.y_root}")
+        self.geometry(f"+{self.winfo_pointerx() - self.x}+{self.winfo_pointery() - self.y}")
 
+    def unmove(self, _):
+        self.first_time = True
 
     def on_press(self, key):
         name = ""
@@ -130,7 +136,7 @@ class App(ctk.CTk):
         self.show()
 
         
-    def on_pr2ess(self, *args):
+    def on_mse_press(self, *args):
 
         if args[3]:
             name = f"{args[2].name} click".upper()
@@ -163,6 +169,8 @@ class App(ctk.CTk):
             key_list[2] = True
 
     def sort(self, name):
+        """Arguments: 1-Name of the pressed button:
+        Fi"""
         key_list = self.keys_dict[name]
         if key_list[1] != 0:
             next_item_index = key_list[1] - 1
